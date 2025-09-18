@@ -1,0 +1,1 @@
+export const companies = ["amazon", "walmart", "target", "bestbuy", "costco","uber","lyft","doordash","grubhub","instacart"];
