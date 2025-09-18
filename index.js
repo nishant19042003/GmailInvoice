@@ -34,7 +34,7 @@ app.get("/email/auth", (req, res) => {
   const url = oauth2Client.generateAuthUrl({
     access_type: "offline",
     scope: SCOPES,
-    prompt: "consent"
+    prompt: "consent",
     redirect_uri: process.env.REDIRECT_URI
   });
   res.redirect(url);
