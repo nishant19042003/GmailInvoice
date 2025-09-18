@@ -35,7 +35,6 @@ app.get("/email/auth", (req, res) => {
     access_type: "offline",
     scope: SCOPES,
     prompt: "consent",
-    redirect_uri: process.env.REDIRECT_URI
   });
   res.redirect(url);
 });
@@ -45,7 +44,7 @@ app.get("/oauth2callback", async (req, res) => {
   const code = req.query.code;
   if (!code) return res.status(400).send("Missing code");
 
-  const { tokens } = await oauth2Client.getToken({code,redirect_uri: process.env.REDIRECT_URI});
+  const { tokens } = await oauth2Client.getToken(code);
   req.session.tokens = tokens;  // Save tokens in session
 
   res.redirect("http://localhost:5173?auth=success");
