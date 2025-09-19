@@ -7,10 +7,13 @@ import FileStoreFactory from "session-file-store"; // session persistence
 
 import { isInvoiceEmail } from "./methods/Filter.js";
 import { parseEmail } from "./methods/emailparse.js";
-
+import fs from "fs";
 dotenv.config();
 const app = express();
-
+// Make sure sessions folder exists
+if (!fs.existsSync("./sessions")) {
+  fs.mkdirSync("./sessions");
+}
 // ---------- FILE-BASED SESSION STORE ----------
 const FileStore = FileStoreFactory(session);
 
