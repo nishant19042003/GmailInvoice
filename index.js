@@ -21,11 +21,12 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // true only in prod (https)
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      secure: false,        // ❌ disable in dev, because localhost is not https
+      sameSite: "lax",      // ❌ allow localhost to get cookies
     },
   })
 );
+
 
 
 // Setup OAuth2
