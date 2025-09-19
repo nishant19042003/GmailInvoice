@@ -14,11 +14,19 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(session({
-  secret: "super-secret-key",
-  resave: false,
-  saveUninitialized: false,
-}));
+app.use(
+  session({
+    secret: "super-secret-key",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // true only in prod (https)
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    },
+  })
+);
+
 
 // Setup OAuth2
 const oauth2Client = new google.auth.OAuth2(
