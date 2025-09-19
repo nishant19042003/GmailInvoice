@@ -105,7 +105,7 @@ app.get("/email/emails", async (req, res) => {
   const gmail = google.gmail({ version: "v1", auth: oauth2Client });
 
   try {
-    const list = await gmail.users.messages.list({ userId: "me", maxResults: 5 });
+    const list = await gmail.users.messages.list({ userId: "me", maxResults: 15 });
     const messages = list.data.messages || [];
 
     const results = [];
