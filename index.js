@@ -1,34 +1,47 @@
-// backend/app.js
 import express from "express";
 import session from "express-session";
 import cors from "cors";
+import dotenv from "dotenv";
 import { google } from "googleapis";
-import dotenv, { parse } from "dotenv";
+import FileStoreFactory from "session-file-store"; // session persistence
+
+import { isInvoiceEmail } from "./methods/Filter.js";
+import { parseEmail } from "./methods/emailparse.js";
 
 dotenv.config();
-
 const app = express();
 
-app.use(cors({
-  origin: "http://localhost:5173",
-  credentials: true
-}));
+// ---------- FILE-BASED SESSION STORE ----------
+const FileStore = FileStoreFactory(session);
 
-app.use(session({
-  secret: "super-secret-key",
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    secure: true,       // only in prod (Render is HTTPS)
-    sameSite: "none",   // allow cross-origin
-  },
-}));
+// ---------- CORS ----------
+app.use(
+  cors({
+    origin: "http://localhost:5173", // frontend
+    credentials: true,               // allow cookies
+  })
+);
 
+// ---------- SESSION ----------
+app.use(
+  session({
+    store: new FileStore({
+      path: "./sessions",
+      retries: 1,
+    }),
+    secret: process.env.SESSION_SECRET || "super-secret-key",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: false,   // ✅ dev only (set true in production with HTTPS)
+      httpOnly: true,
+      sameSite: "lax", // ✅ works in localhost
+      maxAge: 1000 * 60 * 60 * 24, // 1 day
+    },
+  })
+);
 
-
-
-// Setup OAuth2
+// ---------- OAUTH2 ----------
 const oauth2Client = new google.auth.OAuth2(
   process.env.CLIENT_ID,
   process.env.CLIENT_SECRET,
@@ -37,7 +50,6 @@ const oauth2Client = new google.auth.OAuth2(
 
 const SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"];
 
-// Step 1: Redirect user to Google login
 app.get("/email/auth", (req, res) => {
   const url = oauth2Client.generateAuthUrl({
     access_type: "offline",
@@ -47,22 +59,23 @@ app.get("/email/auth", (req, res) => {
   res.redirect(url);
 });
 
-// Step 2: Google redirects here with code
 app.get("/oauth2callback", async (req, res) => {
   const code = req.query.code;
   if (!code) return res.status(400).send("Missing code");
 
-  const { tokens } = await oauth2Client.getToken(code);
-  req.session.tokens = tokens;  // Save tokens in session
-
-  res.redirect("http://localhost:5173?auth=success");
+  try {
+    const { tokens } = await oauth2Client.getToken(code);
+    req.session.tokens = tokens; // ✅ save in session
+    res.redirect("http://localhost:5173?auth=success");
+  } catch (err) {
+    console.error("OAuth callback error:", err);
+    res.status(500).send("Authentication failed");
+  }
 });
-import { isInvoiceEmail } from './methods/Filter.js';
-import {parseEmail} from './methods/emailparse.js';
 
+// ---------- HELPER TO GET EMAIL BODY ----------
 function getBody(payload) {
   let body = "";
-
   if (payload.parts) {
     for (let part of payload.parts) {
       if (part.mimeType === "text/plain" && part.body?.data) {
@@ -76,11 +89,10 @@ function getBody(payload) {
   } else if (payload.body?.data) {
     body += Buffer.from(payload.body.data, "base64").toString("utf-8");
   }
-
   return body;
 }
 
-// Step 3: Fetch emails
+// ---------- FETCH EMAILS ----------
 app.get("/email/emails", async (req, res) => {
   if (!req.session.tokens) return res.status(401).send("Not logged in");
 
@@ -88,29 +100,38 @@ app.get("/email/emails", async (req, res) => {
   const gmail = google.gmail({ version: "v1", auth: oauth2Client });
 
   try {
-    const list = await gmail.users.messages.list({ userId: "me", maxResults: 5 });
-    const messages = list.data.messages || [];
+    const list = await gmail.users.messages.list({
+      userId: "me",
+      maxResults: 5,
+    });
 
+    const messages = list.data.messages || [];
     const results = [];
+
     for (let m of messages) {
       const msg = await gmail.users.messages.get({
         userId: "me",
         id: m.id,
         format: "full",
       });
-      if (!isInvoiceEmail(msg.data)) continue; // Filter non-invoice emails
-     //i want full email body to be parsed
-      const emailBody = getBody(msg.data.payload);
-      const parsedData = parseEmail(emailBody);
 
-      results.push(parsedData);
+      // keep your filter as is
+      if (!isInvoiceEmail(msg.data)) continue;
+
+      const emailBody = getBody(msg.data.payload);
+
+      // keep your parser as is
+      results.push(parseEmail(emailBody));
     }
 
     res.json(results);
   } catch (err) {
-    console.error(err);
+    console.error("Error fetching emails:", err);
     res.status(500).send("Error fetching emails");
   }
 });
 
-app.listen(3000, () => console.log("Server running on http://localhost:3000"));
+app.listen(3000, () =>
+  console.log("✅ Server running on http://localhost:3000")
+);
+
