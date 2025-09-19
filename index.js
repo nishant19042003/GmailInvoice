@@ -10,6 +10,7 @@ import { parseEmail } from "./methods/emailparse.js";
 import fs from "fs";
 dotenv.config();
 const app = express();
+app.set("trust proxy", 1); // 🔑 important for Render (HTTPS proxy)
 // Make sure sessions folder exists
 if (!fs.existsSync("./sessions")) {
   fs.mkdirSync("./sessions");
@@ -36,9 +37,9 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false,   // ✅ dev only (set true in production with HTTPS)
+      secure: true,       // 🔑 because Render is HTTPS
       httpOnly: true,
-      sameSite: "lax", // ✅ works in localhost
+      sameSite: "none",
       maxAge: 1000 * 60 * 60 * 24, // 1 day
     },
   })
