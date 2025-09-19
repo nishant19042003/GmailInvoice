@@ -14,18 +14,17 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(
-  session({
-    secret: "super-secret-key",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      secure: false,        // ❌ disable in dev, because localhost is not https
-      sameSite: "lax",      // ❌ allow localhost to get cookies
-    },
-  })
-);
+app.use(session({
+  secret: "super-secret-key",
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: true,       // only in prod (Render is HTTPS)
+    sameSite: "none",   // allow cross-origin
+  },
+}));
+
 
 
 
