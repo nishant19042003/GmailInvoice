@@ -105,28 +105,22 @@ app.get("/email/emails", async (req, res) => {
   const gmail = google.gmail({ version: "v1", auth: oauth2Client });
 
   try {
-    const list = await gmail.users.messages.list({
-      userId: "me",
-      maxResults: 5,
-    });
-
+    const list = await gmail.users.messages.list({ userId: "me", maxResults: 5 });
     const messages = list.data.messages || [];
-    const results = [];
 
+    const results = [];
     for (let m of messages) {
       const msg = await gmail.users.messages.get({
         userId: "me",
         id: m.id,
         format: "full",
       });
-
-      // keep your filter as is
-      if (!isInvoiceEmail(msg.data)) continue;
-
+      if (!isInvoiceEmail(msg.data)) continue; // Filter non-invoice emails
+     //i want full email body to be parsed
       const emailBody = getBody(msg.data.payload);
+      const parsedData = parseEmail(emailBody);
 
-      // keep your parser as is
-      results.push(parseEmail(emailBody));
+      results.push(parsedData);
     }
 
     res.json(results);
