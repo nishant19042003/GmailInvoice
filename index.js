@@ -21,7 +21,7 @@ const FileStore = FileStoreFactory(session);
 // ---------- CORS ----------
 app.use(
   cors({
-    origin: :process.env.FRONTEND_URL, // frontend
+    origin: process.env.FRONTEND_URL, // frontend
     credentials: true,               // allow cookies
   })
 );
