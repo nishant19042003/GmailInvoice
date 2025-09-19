@@ -70,7 +70,7 @@ app.get("/oauth2callback", async (req, res) => {
   try {
     const { tokens } = await oauth2Client.getToken(code);
     req.session.tokens = tokens; // ✅ save in session
-    res.redirect(`${process.env.FRONTEND_URL}?auth=success`);
+    res.redirect(`${process.env.FRONTEND_URL}?/auth=success`);
   } catch (err) {
     console.error("OAuth callback error:", err);
     res.status(500).send("Authentication failed");
